@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Flipbook Manager</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  <style>
+    .drop-zone.drag-over { border-color: #ec4899; background-color: #fdf2f8; }
+    .page-card { cursor: grab; }
+    .page-card:active { cursor: grabbing; }
+    .sortable-ghost { opacity: 0.4; }
+    .sortable-drag { opacity: 1; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+    .upload-progress { transition: width 0.3s ease; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Header -->
+  <div class="bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl font-bold">📖 Flipbook Manager</h1>
+        <p class="text-pink-100 text-sm mt-0.5">Kelola halaman buku dengan mudah</p>
+      </div>
+      <a href="/" target="_blank"
+         class="bg-white text-pink-600 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-pink-50 transition">
+        Lihat Buku →
+      </a>
+    </div>
+  </div>
+
+  <div class="max-w-5xl mx-auto px-6 py-8">
+
+    <!-- Upload Zone -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">➕ Tambah Halaman Baru</h2>
+
+      <div id="dropZone"
+           class="drop-zone border-2 border-dashed border-pink-300 rounded-xl p-10 text-center cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-all">
+        <div class="text-5xl mb-3">🖼️</div>
+        <p class="text-gray-600 font-medium">Drag & drop gambar ke sini</p>
+        <p class="text-gray-400 text-sm mt-1">atau klik untuk pilih file</p>
+        <p class="text-gray-400 text-xs mt-2">Mendukung: JPG, PNG, WEBP</p>
+        <input type="file" id="fileInput" multiple accept="image/*" class="hidden">
+      </div>
+
+      <!-- Upload Progress -->
+      <div id="uploadProgress" class="hidden mt-4">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-sm text-gray-600" id="uploadStatus">Mengupload...</span>
+          <span class="text-sm text-pink-600 font-medium" id="uploadCount"></span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div id="progressBar" class="upload-progress bg-pink-500 h-2 rounded-full" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pages Grid -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800">📄 Halaman Buku</h2>
+          <p class="text-gray-400 text-sm mt-0.5">Drag untuk mengubah urutan. Klik judul untuk mengedit.</p>
+        </div>
+        <div class="flex gap-2">
+          <span id="pageCount" class="text-sm text-gray-500 self-center"></span>
+          <button id="saveOrderBtn"
+                  class="bg-pink-500 hover:bg-pink-600 text-white font-semibold px-4 py-2 rounded-lg text-sm transition hidden">
+            💾 Simpan Urutan
+          </button>
+        </div>
+      </div>
+
+      <div id="emptyState" class="hidden text-center py-12 text-gray-400">
+        <div class="text-5xl mb-3">📭</div>
+        <p>Belum ada halaman. Upload gambar di atas untuk mulai.</p>
+      </div>
+
+      <div id="pagesGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        <!-- Cards rendered here -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"
+       class="fixed bottom-6 right-6 bg-gray-800 text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+  </div>
+
+  <script>
+    let pages = [];
+    let orderChanged = false;
+
+    // --- Load pages ---
+    async function loadPages() {
+      const res = await fetch('/api/pages');
+      pages = await res.json();
+      renderGrid();
+    }
+
+    function renderGrid() {
+      const grid = document.getElementById('pagesGrid');
+      const empty = document.getElementById('emptyState');
+      const count = document.getElementById('pageCount');
+      count.textContent = `${pages.length} halaman`;
+
+      if (pages.length === 0) {
+        empty.classList.remove('hidden');
+        grid.innerHTML = '';
+        return;
+      }
+      empty.classList.add('hidden');
+
+      grid.innerHTML = pages.map((p, i) => `
+        <div class="page-card bg-gray-50 border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition group"
+             data-index="${i}">
+          <div class="relative">
+            <img src="${p.src}?v=${Date.now()}" alt="${p.title}"
+                 class="w-full aspect-[3/4] object-cover"
+                 onerror="this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100\\' height=\\'133\\'><rect fill=\\'%23f3f4f6\\' width=\\'100\\' height=\\'133\\'></rect><text x=\\'50%\\' y=\\'50%\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%239ca3af\\' font-size=\\'12\\'>No Image</text></svg>'">
+            <div class="absolute top-2 left-2 bg-pink-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow">
+              ${i + 1}
+            </div>
+            <button onclick="deletePage(${i})"
+                    class="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full text-xs opacity-0 group-hover:opacity-100 transition flex items-center justify-center shadow hover:bg-red-600"
+                    title="Hapus">✕</button>
+          </div>
+          <div class="p-2">
+            <input type="text" value="${p.title}"
+                   class="w-full text-xs text-gray-600 bg-transparent border-b border-transparent focus:border-pink-400 focus:outline-none text-center truncate"
+                   onchange="updateTitle(${i}, this.value)"
+                   title="Klik untuk edit judul">
+          </div>
+        </div>
+      `).join('');
+
+      initSortable();
+    }
+
+    function initSortable() {
+      const grid = document.getElementById('pagesGrid');
+      if (grid._sortable) grid._sortable.destroy();
+      grid._sortable = Sortable.create(grid, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        dragClass: 'sortable-drag',
+        onEnd(evt) {
+          const moved = pages.splice(evt.oldIndex, 1)[0];
+          pages.splice(evt.newIndex, 0, moved);
+          orderChanged = true;
+          document.getElementById('saveOrderBtn').classList.remove('hidden');
+          renderGrid();
+        }
+      });
+    }
+
+    // --- Upload ---
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      uploadFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
+    });
+    fileInput.addEventListener('change', () => {
+      uploadFiles(Array.from(fileInput.files));
+      fileInput.value = '';
+    });
+
+    async function uploadFiles(files) {
+      if (!files.length) return;
+      const prog = document.getElementById('uploadProgress');
+      const bar = document.getElementById('progressBar');
+      const status = document.getElementById('uploadStatus');
+      const countEl = document.getElementById('uploadCount');
+      prog.classList.remove('hidden');
+
+      for (let i = 0; i < files.length; i++) {
+        countEl.textContent = `${i + 1} / ${files.length}`;
+        status.textContent = `Mengupload: ${files[i].name}`;
+        bar.style.width = `${Math.round((i / files.length) * 100)}%`;
+
+        const form = new FormData();
+        form.append('file', files[i]);
+        try {
+          const res = await fetch('/api/upload', { method: 'POST', body: form });
+          const data = await res.json();
+          if (data.success) pages.push(data.page);
+        } catch (e) {
+          showToast(`Gagal upload: ${files[i].name}`);
+        }
+      }
+
+      bar.style.width = '100%';
+      status.textContent = 'Selesai!';
+      setTimeout(() => prog.classList.add('hidden'), 1500);
+      orderChanged = false;
+      document.getElementById('saveOrderBtn').classList.add('hidden');
+      renderGrid();
+      showToast(`✅ ${files.length} gambar berhasil diupload`);
+    }
+
+    // --- Delete ---
+    async function deletePage(idx) {
+      if (!confirm(`Hapus halaman "${pages[idx].title}"?`)) return;
+      const res = await fetch(`/api/pages/${idx}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        pages.splice(idx, 1);
+        renderGrid();
+        showToast('🗑️ Halaman dihapus');
+      }
+    }
+
+    // --- Edit title ---
+    function updateTitle(idx, value) {
+      pages[idx].title = value;
+      orderChanged = true;
+      document.getElementById('saveOrderBtn').classList.remove('hidden');
+    }
+
+    // --- Save order ---
+    document.getElementById('saveOrderBtn').addEventListener('click', async () => {
+      const res = await fetch('/api/pages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pages)
+      });
+      const data = await res.json();
+      if (data.success) {
+        orderChanged = false;
+        document.getElementById('saveOrderBtn').classList.add('hidden');
+        showToast('✅ Urutan tersimpan!');
+        renderGrid();
+      }
+    });
+
+    // --- Toast ---
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.remove('translate-y-20', 'opacity-0');
+      t.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        t.classList.add('translate-y-20', 'opacity-0');
+        t.classList.remove('translate-y-0', 'opacity-100');
+      }, 3000);
+    }
+
+    loadPages();
+  </script>
+</body>
+</html>

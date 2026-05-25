@@ -10,7 +10,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
 
   <script>
-    // Membuat query string cache-buster
     const cacheBuster = '?v=' + new Date().getTime();
     document.write('<link rel="stylesheet" type="text/css" href="css/style.css' + cacheBuster + '">');
     document.write('<link rel="stylesheet" type="text/css" href="css/font-awesome.css' + cacheBuster + '">');
@@ -29,48 +28,38 @@
     $(document).ready(function () {
       const cacheBuster = '?v=' + new Date().getTime();
 
-      // Set audio source dengan cache buster
       document.getElementById("audio-source").src = "mp3/lagu.mp3" + cacheBuster;
-
       let music = document.getElementById("background-music");
 
       function playMusic() {
-        music.play().catch(error => {
+        music.play().catch(function(error) {
           console.log("Autoplay prevented: ", error);
         });
         document.removeEventListener("click", playMusic);
       }
-
       document.addEventListener("click", playMusic);
-      
-      $("#container").flipBook({
-        pages: [
-  { src: "images/book2/page1.png" + cacheBuster, thumb: "images/book2/thumb1.png" + cacheBuster, title: "Cover" },
-  { src: "images/book2/page2.png" + cacheBuster, thumb: "images/book2/thumb2.png" + cacheBuster, title: "Page dua" },
-  { src: "images/book2/page3.png" + cacheBuster, thumb: "images/book2/thumb3.png" + cacheBuster, title: "Page tiga" },
-  { src: "images/book2/page4.png" + cacheBuster, thumb: "images/book2/thumb4.png" + cacheBuster, title: "Page empat" },
-  { src: "images/book2/page5.png" + cacheBuster, thumb: "images/book2/thumb5.png" + cacheBuster, title: "Page lima" },
-  { src: "images/book2/page6.png" + cacheBuster, thumb: "images/book2/thumb6.png" + cacheBuster, title: "Page enam" },
-  { src: "images/book2/page7.png" + cacheBuster, thumb: "images/book2/thumb7.png" + cacheBuster, title: "Page tujuh" },
-  { src: "images/book2/page8.png" + cacheBuster, thumb: "images/book2/thumb8.png" + cacheBuster, title: "Page delapan" },
-  { src: "images/book2/page99.png" + cacheBuster, thumb: "images/book2/thumb99.png" + cacheBuster, title: "Page sembilan" },
-  { src: "images/book2/page10.png" + cacheBuster, thumb: "images/book2/thumb10.png" + cacheBuster, title: "Page sepuluh" },
-  { src: "images/book2/page111.png" + cacheBuster, thumb: "images/book2/thumb111.png" + cacheBuster, title: "Page sebelas" },
-  { src: "images/book2/page122.png" + cacheBuster, thumb: "images/book2/thumb122.png" + cacheBuster, title: "Page dua belas" },
-  { src: "images/book2/page133.png" + cacheBuster, thumb: "images/book2/thumb133.png" + cacheBuster, title: "Page tiga belas" },
-  { src: "images/book2/page144.png" + cacheBuster, thumb: "images/book2/thumb144.png" + cacheBuster, title: "Page empat belas" },
-  { src: "images/book2/page155.png" + cacheBuster, thumb: "images/book2/thumb155.png" + cacheBuster, title: "Page lima belas" },
-  { src: "images/book2/page16.png" + cacheBuster, thumb: "images/book2/thumb16.png" + cacheBuster, title: "Page enam belas" }],
-        onShow: function () {
-          music.play();
-        },
-        onHide: function () {
-          music.pause();
-          music.currentTime = 0;
-        }
-      });
+
+      fetch('/api/pages')
+        .then(function(res) { return res.json(); })
+        .then(function(pages) {
+          var pagesWithCache = pages.map(function(p) {
+            return {
+              src: p.src + cacheBuster,
+              thumb: p.thumb + cacheBuster,
+              title: p.title
+            };
+          });
+
+          $("#container").flipBook({
+            pages: pagesWithCache,
+            onShow: function () { music.play(); },
+            onHide: function () { music.pause(); music.currentTime = 0; }
+          });
+        })
+        .catch(function(err) {
+          console.error("Gagal memuat halaman:", err);
+        });
     });
   </script>
 </body>
 </html>
-

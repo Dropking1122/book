@@ -1,0 +1,18 @@
+[
+  {"src": "images/book2/page1.png", "thumb": "images/book2/thumb1.png", "title": "Cover"},
+  {"src": "images/book2/page2.png", "thumb": "images/book2/thumb2.png", "title": "Page dua"},
+  {"src": "images/book2/page3.png", "thumb": "images/book2/thumb3.png", "title": "Page tiga"},
+  {"src": "images/book2/page4.png", "thumb": "images/book2/thumb4.png", "title": "Page empat"},
+  {"src": "images/book2/page5.png", "thumb": "images/book2/thumb5.png", "title": "Page lima"},
+  {"src": "images/book2/page6.png", "thumb": "images/book2/thumb6.png", "title": "Page enam"},
+  {"src": "images/book2/page7.png", "thumb": "images/book2/thumb7.png", "title": "Page tujuh"},
+  {"src": "images/book2/page8.png", "thumb": "images/book2/thumb8.png", "title": "Page delapan"},
+  {"src": "images/book2/page99.png", "thumb": "images/book2/thumb99.png", "title": "Page sembilan"},
+  {"src": "images/book2/page10.png", "thumb": "images/book2/thumb10.png", "title": "Page sepuluh"},
+  {"src": "images/book2/page111.png", "thumb": "images/book2/thumb111.png", "title": "Page sebelas"},
+  {"src": "images/book2/page122.png", "thumb": "images/book2/thumb122.png", "title": "Page dua belas"},
+  {"src": "images/book2/page133.png", "thumb": "images/book2/thumb133.png", "title": "Page tiga belas"},
+  {"src": "images/book2/page144.png", "thumb": "images/book2/thumb144.png", "title": "Page empat belas"},
+  {"src": "images/book2/page155.png", "thumb": "images/book2/thumb155.png", "title": "Page lima belas"},
+  {"src": "images/book2/page16.png", "thumb": "images/book2/thumb16.png", "title": "Page enam belas"}
+]
