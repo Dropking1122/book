@@ -24,10 +24,17 @@
         <h1 class="text-2xl font-bold">📖 Flipbook Manager</h1>
         <p class="text-pink-100 text-sm mt-0.5">Kelola halaman buku dengan mudah</p>
       </div>
-      <a href="/" target="_blank"
-         class="bg-white text-pink-600 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-pink-50 transition">
-        Lihat Buku →
-      </a>
+      <div class="flex gap-2">
+        <a href="/" target="_blank"
+           class="bg-white text-pink-600 font-semibold px-4 py-2 rounded-lg text-sm hover:bg-pink-50 transition">
+          Lihat Buku →
+        </a>
+        <a href="/logout"
+           class="bg-pink-600 hover:bg-pink-700 text-white font-semibold px-4 py-2 rounded-lg text-sm transition"
+           onclick="return confirm('Yakin mau keluar?')">
+          Logout
+        </a>
+      </div>
     </div>
   </div>
 

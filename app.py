@@ -1,13 +1,18 @@
 import os
 import json
 import time
-from flask import Flask, request, jsonify, send_file, abort
+import secrets
+from functools import wraps
+from flask import Flask, request, jsonify, send_file, redirect, url_for, session
+
 from PIL import Image
 
 app = Flask(__name__, static_folder='.', static_url_path='')
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 IMAGES_DIR = 'images/book2'
 PAGES_JSON = os.path.join(IMAGES_DIR, 'pages.json')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin')
 
 
 def load_pages():
@@ -22,14 +27,29 @@ def save_pages(pages):
         json.dump(pages, f, indent=2, ensure_ascii=False)
 
 
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def api_login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('logged_in'):
+            return jsonify({'error': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ── Public routes ──────────────────────────────────────────────
+
 @app.route('/')
 def index():
     return send_file('index.html')
-
-
-@app.route('/admin')
-def admin():
-    return send_file('admin.html')
 
 
 @app.route('/api/pages', methods=['GET'])
@@ -37,7 +57,40 @@ def get_pages():
     return jsonify(load_pages())
 
 
+# ── Auth routes ────────────────────────────────────────────────
+
+@app.route('/login')
+def login_page():
+    if session.get('logged_in'):
+        return redirect(url_for('admin'))
+    return send_file('login.html')
+
+
+@app.route('/login', methods=['POST'])
+def do_login():
+    password = request.form.get('password', '')
+    if password == ADMIN_PASSWORD:
+        session['logged_in'] = True
+        return redirect(url_for('admin'))
+    return redirect(url_for('login_page') + '?error=1')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login_page'))
+
+
+# ── Protected admin routes ─────────────────────────────────────
+
+@app.route('/admin')
+@login_required
+def admin():
+    return send_file('admin.html')
+
+
 @app.route('/api/pages', methods=['POST'])
+@api_login_required
 def update_pages():
     pages = request.get_json()
     if not isinstance(pages, list):
@@ -47,6 +100,7 @@ def update_pages():
 
 
 @app.route('/api/upload', methods=['POST'])
+@api_login_required
 def upload():
     if 'file' not in request.files:
         return jsonify({'error': 'No file provided'}), 400
@@ -81,6 +135,7 @@ def upload():
 
 
 @app.route('/api/pages/<int:idx>', methods=['DELETE'])
+@api_login_required
 def delete_page(idx):
     pages = load_pages()
     if idx < 0 or idx >= len(pages):

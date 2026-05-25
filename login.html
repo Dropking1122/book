@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Flipbook Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 flex items-center justify-center">
+
+  <div class="w-full max-w-sm mx-4">
+
+    <!-- Card -->
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden">
+
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-pink-500 to-rose-500 px-8 py-8 text-center">
+        <div class="text-5xl mb-2">📖</div>
+        <h1 class="text-white text-xl font-bold">Flipbook Manager</h1>
+        <p class="text-pink-100 text-sm mt-1">Masuk untuk mengelola buku</p>
+      </div>
+
+      <!-- Form -->
+      <div class="px-8 py-8">
+
+        <!-- Error state (shown when server returns 403) -->
+        <div id="errorMsg"
+             class="hidden bg-red-50 border border-red-200 text-red-600 text-sm rounded-xl px-4 py-3 mb-5 text-center">
+          ❌ Password salah. Coba lagi.
+        </div>
+
+        <form method="POST" action="/login" id="loginForm">
+          <label class="block text-sm font-medium text-gray-600 mb-2">Password Admin</label>
+          <div class="relative">
+            <input
+              type="password"
+              name="password"
+              id="passwordInput"
+              required
+              autofocus
+              placeholder="Masukkan password..."
+              class="w-full border border-gray-200 rounded-xl px-4 py-3 pr-12 text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent text-sm"
+            >
+            <button type="button" id="togglePassword"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg">
+              👁️
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            class="mt-5 w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-semibold py-3 rounded-xl transition-all duration-200 text-sm shadow-md hover:shadow-lg active:scale-95">
+            Masuk →
+          </button>
+        </form>
+
+        <p class="text-center text-xs text-gray-400 mt-5">
+          <a href="/" class="hover:text-pink-500 transition">← Kembali ke buku</a>
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    if (new URLSearchParams(window.location.search).get('error')) {
+      document.getElementById('errorMsg').classList.remove('hidden');
+    }
+
+    document.getElementById('togglePassword').addEventListener('click', function () {
+      const input = document.getElementById('passwordInput');
+      input.type = input.type === 'password' ? 'text' : 'password';
+    });
+  </script>
+</body>
+</html>
