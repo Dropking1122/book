@@ -14,6 +14,11 @@ IMAGES_DIR = 'images/book2'
 PAGES_JSON = os.path.join(IMAGES_DIR, 'pages.json')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin')
 
+MP3_DIR = 'mp3'
+MUSIC_FILE = os.path.join(MP3_DIR, 'lagu.mp3')
+MUSIC_INFO_FILE = os.path.join(MP3_DIR, 'music_info.json')
+ALLOWED_AUDIO = {'.mp3', '.ogg', '.wav', '.m4a'}
+
 
 def load_pages():
     if os.path.exists(PAGES_JSON):
@@ -153,6 +158,35 @@ def delete_page(idx):
     pages.pop(idx)
     save_pages(pages)
     return jsonify({'success': True})
+
+
+@app.route('/api/music/info', methods=['GET'])
+@api_login_required
+def music_info():
+    name = 'lagu.mp3'
+    if os.path.exists(MUSIC_INFO_FILE):
+        with open(MUSIC_INFO_FILE) as f:
+            name = json.load(f).get('name', 'lagu.mp3')
+    size = os.path.getsize(MUSIC_FILE) if os.path.exists(MUSIC_FILE) else 0
+    return jsonify({'name': name, 'size': size})
+
+
+@app.route('/api/music', methods=['POST'])
+@api_login_required
+def upload_music():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_AUDIO:
+        return jsonify({'error': 'Format tidak didukung. Gunakan MP3, OGG, WAV, atau M4A.'}), 400
+
+    file.save(MUSIC_FILE)
+    with open(MUSIC_INFO_FILE, 'w') as f:
+        json.dump({'name': file.filename}, f)
+
+    return jsonify({'success': True, 'name': file.filename})
 
 
 if __name__ == '__main__':

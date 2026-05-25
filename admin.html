@@ -65,6 +65,43 @@
       </div>
     </div>
 
+    <!-- Music Manager -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">🎵 Musik Latar</h2>
+
+      <!-- Current music info -->
+      <div id="musicInfo" class="flex items-center gap-4 bg-pink-50 border border-pink-100 rounded-xl px-4 py-3 mb-4">
+        <div class="text-3xl">🎶</div>
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-700 truncate" id="musicName">Memuat...</p>
+          <p class="text-xs text-gray-400" id="musicSize"></p>
+        </div>
+        <audio id="musicPreview" controls src="/mp3/lagu.mp3"
+               class="h-8 w-40 shrink-0"
+               style="accent-color:#ec4899"></audio>
+      </div>
+
+      <!-- Music upload zone -->
+      <div id="musicDropZone"
+           class="drop-zone border-2 border-dashed border-pink-300 rounded-xl p-6 text-center cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-all">
+        <div class="text-3xl mb-1">🎵</div>
+        <p class="text-gray-600 text-sm font-medium">Drag & drop file musik ke sini</p>
+        <p class="text-gray-400 text-xs mt-1">atau klik untuk pilih file</p>
+        <p class="text-gray-400 text-xs mt-1">Mendukung: MP3, OGG, WAV, M4A</p>
+        <input type="file" id="musicInput" accept=".mp3,.ogg,.wav,.m4a,audio/*" class="hidden">
+      </div>
+
+      <!-- Music upload progress -->
+      <div id="musicProgress" class="hidden mt-3">
+        <div class="flex items-center gap-2 mb-1">
+          <span class="text-sm text-gray-600" id="musicStatus">Mengupload musik...</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div id="musicBar" class="upload-progress bg-pink-500 h-2 rounded-full w-0 animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Pages Grid -->
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
       <div class="flex items-center justify-between mb-4">
@@ -262,7 +299,68 @@
       }, 3000);
     }
 
+    // --- Music ---
+    async function loadMusicInfo() {
+      try {
+        const res = await fetch('/api/music/info');
+        if (res.status === 401) return;
+        const data = await res.json();
+        document.getElementById('musicName').textContent = data.name;
+        const kb = data.size ? (data.size / 1024).toFixed(1) + ' KB' : '';
+        document.getElementById('musicSize').textContent = kb;
+      } catch (e) {}
+    }
+
+    const musicDrop = document.getElementById('musicDropZone');
+    const musicInput = document.getElementById('musicInput');
+
+    musicDrop.addEventListener('click', () => musicInput.click());
+    musicDrop.addEventListener('dragover', e => { e.preventDefault(); musicDrop.classList.add('drag-over'); });
+    musicDrop.addEventListener('dragleave', () => musicDrop.classList.remove('drag-over'));
+    musicDrop.addEventListener('drop', e => {
+      e.preventDefault();
+      musicDrop.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) uploadMusic(f);
+    });
+    musicInput.addEventListener('change', () => {
+      if (musicInput.files[0]) uploadMusic(musicInput.files[0]);
+      musicInput.value = '';
+    });
+
+    async function uploadMusic(file) {
+      const prog = document.getElementById('musicProgress');
+      const bar = document.getElementById('musicBar');
+      const status = document.getElementById('musicStatus');
+      prog.classList.remove('hidden');
+      bar.style.width = '60%';
+      status.textContent = `Mengupload: ${file.name}`;
+
+      const form = new FormData();
+      form.append('file', file);
+      try {
+        const res = await fetch('/api/music', { method: 'POST', body: form });
+        const data = await res.json();
+        if (data.success) {
+          bar.style.width = '100%';
+          status.textContent = 'Selesai!';
+          document.getElementById('musicName').textContent = data.name;
+          // Reload audio player
+          const audio = document.getElementById('musicPreview');
+          audio.src = '/mp3/lagu.mp3?v=' + Date.now();
+          audio.load();
+          showToast('🎵 Musik berhasil diganti!');
+        } else {
+          showToast('❌ ' + (data.error || 'Gagal upload musik'));
+        }
+      } catch (e) {
+        showToast('❌ Gagal upload musik');
+      }
+      setTimeout(() => prog.classList.add('hidden'), 1500);
+    }
+
     loadPages();
+    loadMusicInfo();
   </script>
 </body>
 </html>
